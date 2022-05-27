@@ -1,0 +1,36 @@
+drop table OM001_TEST; 
+create table OM001_TEST (
+    USR_ID VARCHAR2(20) PRIMARY KEY,
+    USR_NM VARCHAR2(500 BYTE) NOT NULL,
+    PWD_NO_ENC_CNTN VARCHAR2(100 BYTE) NOT NULL,
+    USR_COUNT INTEGER,
+    USR_LCK VARCHAR2(1)
+);
+
+COMMENT ON COLUMN OM001_TEST.USR_ID IS '사용자 코드';
+COMMENT ON COLUMN OM001_TEST.USR_NM IS '사용자 이름';
+COMMENT ON COLUMN OM001_TEST.PWD_NO_ENC_CNTN IS '비밀번호 암호화 내용';
+COMMENT ON COLUMN OM001_TEST.USR_COUNT IS '비밀번호 오류횟수';
+COMMENT ON COLUMN OM001_TEST.USR_LCK IS '계정잠금 여부';
+
+INSERT INTO OM001_TEST VALUES ('test1','1111','1111', '', 'N');
+INSERT INTO OM001_TEST VALUES ('test2','2222','2222', '1', 'N');
+INSERT INTO OM001_TEST VALUES ('test3','3333','3333', '2', 'N');
+INSERT INTO OM001_TEST VALUES ('test4','4444','4444', '5', 'N');
+INSERT INTO OM001_TEST VALUES ('test5','5555','5555', '5', 'Y');
+
+UPDATE OM001_TEST SET USR_LCK = 'N' WHERE USR_ID='test4';
+UPDATE OM001_TEST SET USR_LCK = 'N' WHERE USR_ID='test1';
+UPDATE OM001_TEST SET USR_COUNT = '3' WHERE USR_ID='test4';
+
+select * from OM001_TEST;
+rollback;
+commit;
+
+update OM001_TEST 
+    set USR_LCK = (case 
+                        when USR_LCK = 'N' then 'Y'
+                        when USR_LCK is null then 'Y'
+                        when USR_LCK = 'Y' then 'N'
+                   end)
+    WHERE USR_ID='test3';

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="com.company.myapp.mapper.AcctMnApiMapper">
+ 	
+ 	<!-- 회원가입 -->
+ 	<insert id="SignUp">
+		insert into om001_test(usr_id, pwd_no_enc_cntn, usr_nm, usr_count, usr_lck) 
+		values(#{usr_id},#{pwd_no_enc_cntn}, #{usr_nm}, 0, 'N')
+	</insert>
+ 	
+ 	<!-- 아이디 검사 -->
+	<select id="login_Check" resultType="com.company.myapp.command.ActMnVO">
+		SELECT usr_id
+			 , pwd_no_enc_cntn
+			 , usr_nm
+			 , NVL(usr_count,0) as usr_count
+			 , NVL(usr_lck, 'N') as usr_lck 
+			 FROM om001_test 
+			 WHERE 
+			 	usr_id=#{usr_id}
+			 	<if test = ' pwd_no_enc_cntn != null and pwd_no_enc_cntn neq "" '>
+		        AND pwd_no_enc_cntn=#{pwd_no_enc_cntn} 
+		        </if>
+	</select>
+	
+	<!-- 로그인 실패: 실패 횟수 업데이트 -->
+	<update id="failCntUpdate" parameterType="com.company.myapp.command.ActMnVO">
+  		UPDATE om001_test 
+	  		SET usr_count = NVL(usr_count, 0)+1
+			WHERE usr_id=#{usr_id}
+  	</update>
+  	
+  	<!-- 로그인 실패: 실패 횟수 조회 -->
+  	<select id="failCntGet" resultType="com.company.myapp.command.ActMnVO" >
+		SELECT 
+			  NVL(usr_count,0) as usr_count
+			, NVL(usr_lck, 'N') as usr_lck
+			FROM om001_test 
+			WHERE usr_id=#{usr_id}
+  	</select>
+	
+	<!-- 로그인 실패: 자동 계정잠금 -->
+  	<update id="LckUpdate_Y">
+		UPDATE om001_test SET usr_lck = 'Y' 
+			WHERE usr_id=#{usr_id}
+  	</update>
+
+	<!-- 관리자 페이지 리스트 뿌리기 -->
+  	<select id="getList" resultType="com.company.myapp.command.ActMnVO">
+		SELECT usr_id, usr_nm, usr_lck FROM om001_test
+	</select>
+	 
+	 <!-- 로그인 성공: count 자동 초기화 (겸사겸사 lck = 'N'으로 초기화) -->
+	 <update id="ClearCnt" parameterType="String">
+		UPDATE om001_test 
+		    SET usr_lck = 'N'
+		      , usr_count = 0
+		    WHERE usr_id=#{usr_id}
+	 </update>
+	 
+	 <!-- 관리자 수동 초기화 -->
+	 <update id="MngAccount" parameterType="com.company.myapp.command.ActMnVO">
+		UPDATE om001_test 
+		    SET usr_lck = (CASE 
+		                        WHEN usr_lck = 'N' THEN 'Y'
+		                        WHEN usr_lck is null THEN 'Y'
+		                        WHEN usr_lck = 'Y' THEN 'N'
+		                   END)
+		        <if test = " usr_lck eq 'Y'.toString() ">
+		        , usr_count = 0 
+		        </if>
+		    WHERE usr_id=#{usr_id}
+	 </update>
+  	
+  </mapper>
